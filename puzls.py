@@ -23,6 +23,12 @@ class PuzEntry():
 
         self.progress = len(filled)/len(total)
 
+        if b'LTIM' in self.puzfile.extensions:
+            tb = self.puzfile.extensions[b'LTIM']
+            self.timer = int(tb.decode().split(',')[0])
+        else:
+            self.timer = None
+
         try:
             self.line_width = os.get_terminal_size().columns
         except:
@@ -34,14 +40,19 @@ class PuzEntry():
         column = int(width/3)
         inner = column - 4
         return (f'{self.progress:5.0%} {self.title:{column}.{inner}}'
-                f'{self.author:{column}.{inner}}{self.path:{column}.{inner}}')
+                f'{self.author:{column}.{inner}}'
+                f'{os.path.basename(self.path):{column}.{inner}}')
 
     @property
     def info_output(self):
         puzzle_rows = ['PUZZLE PROGRESS','']
         puzzle_rows.extend(format_puzzle(self.fill, self.puzfile.width))
+
+        timer = seconds_to_hhmmss(self.timer) if self.timer else ''
+
         puzzle_info = ['PUZZLE INFO', '', self.title, self.author, '',
-                        f'{self.progress:.0%} complete']
+                        f'{self.progress:.0%} complete', '',
+                        f'{timer}']
 
         column_width = min(int(self.line_width/2), len(puzzle_rows[-1]) + 10)
 
@@ -81,6 +92,11 @@ def format_puzzle(fill, width):
         formatted_rows.append(formatted_row)
 
     return formatted_rows
+
+def seconds_to_hhmmss(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return f'{h:02d}:{m:02d}:{s:02d}'
 
 
 def list_puzzles(directory):
