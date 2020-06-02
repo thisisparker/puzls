@@ -13,8 +13,8 @@ class PuzEntry():
         self.path = path
 
         self.puzfile = puz.read(path)
-        self.title = self.puzfile.title
-        self.author = self.puzfile.author
+        self.title = self.puzfile.title.strip()
+        self.author = self.puzfile.author.strip()
 
         self.fill = self.puzfile.fill
 
@@ -23,7 +23,10 @@ class PuzEntry():
 
         self.progress = len(filled)/len(total)
 
-        self.line_width = os.get_terminal_size().columns
+        try:
+            self.line_width = os.get_terminal_size().columns
+        except:
+            self.line_width = 80
 
     @property
     def list_output(self):
@@ -80,9 +83,13 @@ def format_puzzle(fill, width):
     return formatted_rows
 
 
-def list_puzzles():
-    puz_paths = glob.glob('*.puz')
+def list_puzzles(directory):
+    abs_path = os.path.abspath(directory)
+    puz_paths = glob.glob(os.path.join(abs_path, '*.puz'))
     puzzles = []
+
+    if not puz_paths:
+        sys.exit(f'No puz files found in {abs_path}.')
 
     for path in puz_paths:
         try:
@@ -94,8 +101,9 @@ def list_puzzles():
 
     sorted_puzzles = sorted(puzzles, key=lambda x: x.progress, reverse=True)
 
-    for puzzle in sorted_puzzles:
-        print(puzzle.list_output)
+    output = '\n'.join(puzzle.list_output for puzzle in sorted_puzzles)
+
+    print(output)
 
 def puzzle_info(puzfile):
     try:
@@ -109,15 +117,21 @@ def puzzle_info(puzfile):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--info', '-i')
+    parser.add_argument('input', nargs='?')
 
     args = parser.parse_args()
 
-    if args.info:
-        puzzle_info(args.info)
+    if not args.input:
+        list_puzzles('.')
+
+    elif os.path.isdir(args.input):
+        list_puzzles(args.input)
+
+    elif os.path.isfile(args.input):
+        puzzle_info(args.input)
 
     else:
-        list_puzzles()
+        sys.exit(f'Cannot read {args.input} as a file or directory')
 
 if __name__ == '__main__':
     main()
